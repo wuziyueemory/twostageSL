@@ -1,0 +1,19 @@
+Package: twostageSL
+Type: Package
+Title: Two-Stage Super Learner Prediction Function
+Version: 0.1.0
+Author: Ziyue Wu <ziyue.wu@emory.edu>
+Maintainer: Ziyue Wu <ziyue.wu@emory.edu>
+Description: Implements the two-stage super learner prediction method and contains a
+    library of prediction algorithms to be used in the two-stage super learner.
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.0
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+Depends:
+    R (>= 2.14.0),
+    SuperLearner
