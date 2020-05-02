@@ -18,3 +18,5 @@ Depends:
     R (>= 2.14.0),
     SuperLearner,
     slcost
+URL: https://github.com/wuziyueemory/twostageSL
+BugReports: https://github.com/wuziyueemory/twostageSL/issues
