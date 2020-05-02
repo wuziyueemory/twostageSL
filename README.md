@@ -26,6 +26,12 @@ This is a basic example which shows you how to solve a common problem:
 
 ``` r
 library(twostageSL)
+#> Loading required package: SuperLearner
+#> Loading required package: nnls
+#> Super Learner
+#> Version: 2.0-25
+#> Package created on 2019-08-05
+#> Loading required package: slcost
 ## basic example code
 ```
 
