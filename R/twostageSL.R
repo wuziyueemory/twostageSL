@@ -53,6 +53,7 @@
 #' @seealso \link{SuperLearner}.
 #' @export
 #' @import SuperLearner
+#' @import slcost
 #' @examples
 #' ## simulate data
 #' set.seed(123)
