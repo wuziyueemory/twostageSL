@@ -13,10 +13,11 @@ knitr::opts_chunk$set(
 )
 ```
 
-# twostageSL
+# twostageSL: Two-stage Super Learner for predicting healthcare cost with zero-inflation
 
 <!-- badges: start -->
 <!-- badges: end -->
+
 
 The goal of twostageSL is to implement the two-stage super learner prediction method and contain a
     library of prediction algorithms to be used in the two-stage super learner.

@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# twostageSL
+# twostageSL: Two-stage Super Learner for predicting healthcare cost with zero-inflation
 
 <!-- badges: start -->
 
@@ -26,12 +26,6 @@ This is a basic example which shows you how to solve a common problem:
 
 ``` r
 library(twostageSL)
-#> Loading required package: SuperLearner
-#> Loading required package: nnls
-#> Super Learner
-#> Version: 2.0-25
-#> Package created on 2019-08-05
-#> Loading required package: slcost
 ## basic example code
 ```
 
