@@ -8,9 +8,9 @@ CV.twostageSL(
   Y,
   X,
   V = NULL,
-  family.1,
-  family.2,
-  family.single,
+  family.1 = binomial,
+  family.2 = gaussian,
+  family.single = gaussian,
   library.2stage,
   library.1stage,
   twostage,
@@ -33,11 +33,11 @@ CV.twostageSL(
 
 \item{V}{The number of folds for \code{CV.SuperLearner}. This argument will be depreciated and moved into the \code{cvControl}. If Both \code{V} and \code{cvControl} set the number of cross-validation folds, an error message will appear. The recommendation is to use \code{cvControl}. This is not the number of folds for \code{twostageSL}. The number of folds for \code{twostageSL} is controlled with \code{innerCvControl}.}
 
-\item{family.1}{Error distribution of the stage 1 outcome for two-stage super learner. Currently only allows \code{binomial} to describe the error distribution. Link function information will be ignored and should be contained in the method argument below.}
+\item{family.1}{Error distribution of the stage 1 outcome for two-stage super learner. Currently only allows \code{binomial} (default) to describe the error distribution. Link function information will be ignored and should be contained in the method argument below.}
 
-\item{family.2}{Error distribution of the stage 2 outcome for two-stage super learner. Currently only allows \code{gaussian} to describe the error distribution. Link function information will be ignored and should be contained in the method argument below.}
+\item{family.2}{Error distribution of the stage 2 outcome for two-stage super learner. Currently only allows \code{gaussian} (default) to describe the error distribution. Link function information will be ignored and should be contained in the method argument below.}
 
-\item{family.single}{Error distribution of the outcome for standard super learner. Currently only allows \code{gaussian} to describe the error distribution. Link function information will be ignored and should be contained in the method argument below.}
+\item{family.single}{Error distribution of the outcome for standard super learner. Currently only allows \code{gaussian} (default) to describe the error distribution. Link function information will be ignored and should be contained in the method argument below.}
 
 \item{library.2stage}{Candidate prediction algorithms in two-stage super learner. A list containing prediction algorithms at stage 1 and stage 2, the prediction algorithms are either a character vector or a list containing character vectors. See details below for examples on the structure. A list of functions included in the SuperLearner package can be found with \code{listWrappers()}.}
 

@@ -8,9 +8,9 @@
 #' @param library.2stage Candidate prediction algorithms in two-stage super learner. A list containing prediction algorithms at stage 1 and stage 2, the prediction algorithms are either a character vector or a list containing character vectors. See details below for examples on the structure. A list of functions included in the \code{twostageSL} package can be found with \code{twostage_listWrappers}.
 #' @param library.1stage Candidate prediction algorithms in standard super learner. Either a character vector of prediction algorithms or a list containing character vectors. See details below for examples on the structure. A list of functions included in the \code{twostageSL} package can be found with \code{twostage_listWrappers}.
 #' @param twostage logical; TRUE for implementing two-stage super learner; FALSE for implementing standatd super learner
-#' @param family.1 Error distribution of the stage 1 outcome for two-stage super learner. Currently only allows \code{binomial} to describe the error distribution. Link function information will be ignored and should be contained in the method argument below.
-#' @param family.2 Error distribution of the stage 2 outcome for two-stage super learner. Currently only allows \code{gaussian} to describe the error distribution. Link function information will be ignored and should be contained in the method argument below.
-#' @param family.single Error distribution of the outcome for standard super learner. Currently only allows \code{gaussian} to describe the error distribution. Link function information will be ignored and should be contained in the method argument below.
+#' @param family.1 Error distribution of the stage 1 outcome for two-stage super learner. Currently only allows \code{binomial} (default) to describe the error distribution. Link function information will be ignored and should be contained in the method argument below.
+#' @param family.2 Error distribution of the stage 2 outcome for two-stage super learner. Currently only allows \code{gaussian} (default) to describe the error distribution. Link function information will be ignored and should be contained in the method argument below.
+#' @param family.single Error distribution of the outcome for standard super learner. Currently only allows \code{gaussian} (default) to describe the error distribution. Link function information will be ignored and should be contained in the method argument below.
 #' @param method Details on estimating the coefficients for the two-stage super learner and the model to combine the individual algorithms in the library. Currently, the built in option is only "method.CC_LS.scale" (default) which is a scaled version of CC_LS. CC_LS.scale uses Goldfarb and Idnani's quadratic programming algorithm to calculate the best convex combination of weights to minimize the squared error loss. In addition, CC_LS.scale divides the quadratic function by a large constant to shrink the huge matrix and vector in quadratic function.
 #' @param id Optional cluster identification variable. For the cross-validation splits, \code{id} forces observations in the same cluster to be in the same validation fold. \code{id} is passed to the prediction and screening algorithms in library.2stage and library.1stage, but be sure to check the individual wrappers as many of them ignore the information.
 #' @param verbose logical; TRUE for printing progress during the computation (helpful for debugging).
@@ -161,8 +161,9 @@
 #'
 
 twostageSL <- function(Y, X, newX = NULL, library.2stage, library.1stage,twostage,
-                       family.1, family.2, family.single, method="method.CC_LS.scale",
-                       id=NULL, verbose=FALSE, control = list(), cvControl = list(),
+                       family.1=binomial, family.2=gaussian, family.single=gaussian,
+                       method="method.CC_LS.scale", id=NULL, verbose=FALSE,
+                       control = list(), cvControl = list(),
                        obsWeights = NULL, env = parent.frame()){
 
   # Begin timing how long two-stage SuperLearner takes to execute

@@ -128,9 +128,6 @@ two <- twostageSL(Y=Y,
                    library.2stage <- twostage.library,
                    library.1stage <- onestage.library,
                    twostage = TRUE,
-                   family.1=binomial,
-                   family.2=gaussian,
-                   family.single=gaussian,
                    cvControl = list(V = 5))
 two
 ```
@@ -144,9 +141,6 @@ one <- twostageSL(Y=Y,
                   library.2stage <- twostage.library,
                   library.1stage <- onestage.library,
                   twostage = FALSE,
-                  family.1=binomial,
-                  family.2=gaussian,
-                  family.single=gaussian,
                   cvControl = list(V = 5))
 one
 ```
@@ -155,9 +149,6 @@ We could also use `CV.twostageSL` to get v-fold cross validated risk estimate fo
 ```{r example 7, message=FALSE}
 two_cv <- CV.twostageSL(
   Y = Y, X = X,
-  family.1 = binomial,
-  family.2 = gaussian,
-  family.single = gaussian,
   library.2stage = twostage.library,
   library.1stage = onestage.library,
   cvControl = list(V = 2),

@@ -11,9 +11,9 @@ twostageSL(
   library.2stage,
   library.1stage,
   twostage,
-  family.1,
-  family.2,
-  family.single,
+  family.1 = binomial,
+  family.2 = gaussian,
+  family.single = gaussian,
   method = "method.CC_LS.scale",
   id = NULL,
   verbose = FALSE,
@@ -36,11 +36,11 @@ twostageSL(
 
 \item{twostage}{logical; TRUE for implementing two-stage super learner; FALSE for implementing standatd super learner}
 
-\item{family.1}{Error distribution of the stage 1 outcome for two-stage super learner. Currently only allows \code{binomial} to describe the error distribution. Link function information will be ignored and should be contained in the method argument below.}
+\item{family.1}{Error distribution of the stage 1 outcome for two-stage super learner. Currently only allows \code{binomial} (default) to describe the error distribution. Link function information will be ignored and should be contained in the method argument below.}
 
-\item{family.2}{Error distribution of the stage 2 outcome for two-stage super learner. Currently only allows \code{gaussian} to describe the error distribution. Link function information will be ignored and should be contained in the method argument below.}
+\item{family.2}{Error distribution of the stage 2 outcome for two-stage super learner. Currently only allows \code{gaussian} (default) to describe the error distribution. Link function information will be ignored and should be contained in the method argument below.}
 
-\item{family.single}{Error distribution of the outcome for standard super learner. Currently only allows \code{gaussian} to describe the error distribution. Link function information will be ignored and should be contained in the method argument below.}
+\item{family.single}{Error distribution of the outcome for standard super learner. Currently only allows \code{gaussian} (default) to describe the error distribution. Link function information will be ignored and should be contained in the method argument below.}
 
 \item{method}{Details on estimating the coefficients for the two-stage super learner and the model to combine the individual algorithms in the library. Currently, the built in option is only "method.CC_LS.scale" (default) which is a scaled version of CC_LS. CC_LS.scale uses Goldfarb and Idnani's quadratic programming algorithm to calculate the best convex combination of weights to minimize the squared error loss. In addition, CC_LS.scale divides the quadratic function by a large constant to shrink the huge matrix and vector in quadratic function.}
 

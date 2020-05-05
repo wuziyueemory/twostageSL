@@ -183,17 +183,13 @@ two <- twostageSL(Y=Y,
                    library.2stage <- twostage.library,
                    library.1stage <- onestage.library,
                    twostage = TRUE,
-                   family.1=binomial,
-                   family.2=gaussian,
-                   family.single=gaussian,
                    cvControl = list(V = 5))
 two
 #> 
 #> Call:  
 #> twostageSL(Y = Y, X = X, newX = newX, library.2stage = library.2stage <- twostage.library,  
 #>     library.1stage = library.1stage <- onestage.library, twostage = TRUE,  
-#>     family.1 = binomial, family.2 = gaussian, family.single = gaussian, cvControl = list(V = 5)) 
-#> 
+#>     cvControl = list(V = 5)) 
 #> 
 #> 
 #>                                         Risk      Coef
@@ -225,9 +221,6 @@ one <- twostageSL(Y=Y,
                   library.2stage <- twostage.library,
                   library.1stage <- onestage.library,
                   twostage = FALSE,
-                  family.1=binomial,
-                  family.2=gaussian,
-                  family.single=gaussian,
                   cvControl = list(V = 5))
 one
 #> 
@@ -251,9 +244,6 @@ folds to be 2.
 ``` r
 two_cv <- CV.twostageSL(
   Y = Y, X = X,
-  family.1 = binomial,
-  family.2 = gaussian,
-  family.single = gaussian,
   library.2stage = twostage.library,
   library.1stage = onestage.library,
   cvControl = list(V = 2),
@@ -263,8 +253,7 @@ two_cv <- CV.twostageSL(
 two_cv
 #> 
 #> Call:  
-#> CV.twostageSL(Y = Y, X = X, family.1 = binomial, family.2 = gaussian, family.single = gaussian,  
-#>     library.2stage = twostage.library, library.1stage = onestage.library,  
+#> CV.twostageSL(Y = Y, X = X, library.2stage = twostage.library, library.1stage = onestage.library,  
 #>     cvControl = list(V = 2), innerCvControl = list(list(V = 5), list(V = 5))) 
 #> 
 #> 
@@ -283,8 +272,7 @@ outperforming all other prediction algorithms.
 
     #> 
     #> Call:  
-    #> CV.twostageSL(Y = Y, X = X, family.1 = binomial, family.2 = gaussian, family.single = gaussian,  
-    #>     library.2stage = twostage.library, library.1stage = onestage.library,  
+    #> CV.twostageSL(Y = Y, X = X, library.2stage = twostage.library, library.1stage = onestage.library,  
     #>     cvControl = list(V = 2), innerCvControl = list(list(V = 5), list(V = 5))) 
     #> 
     #> Risk is based on: Mean Squared Error
