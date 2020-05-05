@@ -34,6 +34,29 @@ utilization and extended the standard super learner by providing an
 additional layer of the ensemble, thus allowing for greater flexibility
 and improving the cost prediction.
 
+## Two-stage Super Learner
+
+To deal with zero-inflation in the positively skewed data, we designed a
+method that implemented the super learner under the Two-part model
+framework (Two-stage Super Learner). Using
+\(E[Y|X] = Pr(Y>0|X)E[Y|Y>0,X]\), the objective of estimating \(E[Y|X]\)
+could be broken into two separate pieces: estimating \(Pr(Y>0|X)\) and
+\(E[Y|Y>0,X]\). This is done by adding an additional layer of the
+ensemble to tackle the problem of a point mass at zero. Rather than
+specifying a single library of prediction algorithms as in standard
+super learner, we specify two separate libraries of prediction
+algorithms, one for each of the two stages. Specifically, we specify the
+first stage library by positing a collection of different estimators
+predicting the probability of the outcome being positive and specify the
+second stage library by positing another collection of estimators
+predicting the mean of positive outcomes. Assuming the first stage
+library includes \(K1\) methods and the second stage library includes
+\(K2\) methods, then the two-stage super learner’s “whole library” would
+contain \(K1*K2\) candidate estimators with each one representing a
+specific combination of methods from the first stage and second stage.
+The two-stage super learner is also an ensembling method built through a
+combination of algorithms that provide the best fit to the data.
+
 ## Features
 
 `twostageSL` is an R package that provides tools for analyzing health
@@ -81,13 +104,7 @@ Generate training and testing set.
 
 ``` r
 library(twostageSL)
-#> Loading required package: SuperLearner
-#> Loading required package: nnls
-#> Super Learner
-#> Version: 2.0-25
-#> Package created on 2019-08-05
-#> Loading required package: slcost
-set.seed(1)
+set.seed(121)
 ## training set
 n <- 1000
 p <- 5
@@ -124,32 +141,20 @@ newY[newind] <- 10 + newX[newind, 1] + sqrt(abs(newX[newind, 2] * newX[newind, 3
 
 The training data looks like
 
-``` r
-head(X)
-#>           X1          X2          X3         X4         X5
-#> 1 -0.6264538  1.13496509 -0.88614959  0.7391149 -1.1346302
-#> 2  0.1836433  1.11193185 -1.92225490  0.3866087  0.7645571
-#> 3 -0.8356286 -0.87077763  1.61970074  1.2963972  0.5707101
-#> 4  1.5952808  0.21073159  0.51926990 -0.8035584 -1.3516939
-#> 5  0.3295078  0.06939565 -0.05584993 -1.6026257 -2.0298855
-#> 6 -0.8204684 -1.66264885  0.69641761  0.9332510  0.5904787
-```
+    #>            X1         X2          X3         X4         X5
+    #> 1 -0.25536047  0.5210512  0.07889016  1.5794606 -0.2476091
+    #> 2  0.10837472  0.8525208  0.26945885 -0.4203506  0.5246956
+    #> 3  0.12778056 -1.9302377 -0.33684853 -0.9691443 -0.6481140
+    #> 4 -0.08107345 -1.4007554  0.23814700 -0.2929321 -1.9521166
+    #> 5 -0.71368372  0.4402426 -1.15347200 -0.5136347 -1.3213276
+    #> 6  1.61533208  0.2069617 -0.04666425  0.2745282 -2.6145711
 
 The proportion of zeros in outcome Y.
 
-``` r
-mean(Y==0)
-#> [1] 0.347
-```
+    #> [1] 0.368
 
 The distribution of outcome Y, which is zero-inflated and heavily
-skewed.
-
-``` r
-hist(Y,breaks = 100,freq = FALSE,main="Distribution of Y")
-```
-
-<img src="man/figures/README-example 4-1.png" width="100%" />
+skewed. <img src="man/figures/README-example 4-1.png" width="100%" />
 
 `twostageSL` is the core function to fit the two stage super learner. At
 a minimum for implementation, you need to specify the predictor matrix
@@ -165,10 +170,10 @@ Generate the library and run the two stage super learner
 
 ``` r
 ## generate the Library
-twostage.library <- list(stage1=c("SL.glm","SL.earth","SL.randomForest"),
-                       stage2=c("SL.glm","SL.earth","SL.randomForest","SL.coxph"))
+twostage.library <- list(stage1=c("SL.mean","SL.glm","SL.earth"),
+                       stage2=c("SL.mean","SL.glm","SL.earth","SL.coxph"))
 
-onestage.library <- c("SL.glm","SL.earth","SL.randomForest")
+onestage.library <- c("SL.mean","SL.glm","SL.earth")
 
 
 ## run the twostage super learner
@@ -182,10 +187,6 @@ two <- twostageSL(Y=Y,
                    family.2=gaussian,
                    family.single=gaussian,
                    cvControl = list(V = 5))
-#> Loading required package: quadprog
-#> Loading required namespace: randomForest
-#> Loading required namespace: earth
-#> Loading required package: nloptr
 two
 #> 
 #> Call:  
@@ -195,22 +196,22 @@ two
 #> 
 #> 
 #> 
-#>                                                       Risk       Coef
-#> S1: SL.glm_All + S2: SL.glm_All                   20.86725 0.00000000
-#> S1: SL.glm_All + S2: SL.earth_All                 20.93465 0.08384237
-#> S1: SL.glm_All + S2: SL.randomForest_All          21.05839 0.00000000
-#> S1: SL.glm_All + S2: SL.coxph_All                 20.84862 0.00000000
-#> S1: SL.earth_All + S2: SL.glm_All                 19.11666 0.00000000
-#> S1: SL.earth_All + S2: SL.earth_All               19.06665 0.15485605
-#> S1: SL.earth_All + S2: SL.randomForest_All        19.06521 0.37516389
-#> S1: SL.earth_All + S2: SL.coxph_All               19.09128 0.00000000
-#> S1: SL.randomForest_All + S2: SL.glm_All          19.49827 0.00000000
-#> S1: SL.randomForest_All + S2: SL.earth_All        19.35212 0.20370859
-#> S1: SL.randomForest_All + S2: SL.randomForest_All 19.48207 0.01440149
-#> S1: SL.randomForest_All + S2: SL.coxph_All        19.44992 0.13614912
-#> Single: SL.glm_All                                21.12016 0.03187848
-#> Single: SL.earth_All                              20.39265 0.00000000
-#> Single: SL.randomForest_All                       19.99982 0.00000000
+#>                                         Risk      Coef
+#> S1: SL.mean_All + S2: SL.mean_All   30.99158 0.0000000
+#> S1: SL.mean_All + S2: SL.glm_All    26.02499 0.0000000
+#> S1: SL.mean_All + S2: SL.earth_All  26.34461 0.0000000
+#> S1: SL.mean_All + S2: SL.coxph_All  26.25908 0.0000000
+#> S1: SL.glm_All + S2: SL.mean_All    22.91554 0.0000000
+#> S1: SL.glm_All + S2: SL.glm_All     20.80390 0.0000000
+#> S1: SL.glm_All + S2: SL.earth_All   20.97040 0.0000000
+#> S1: SL.glm_All + S2: SL.coxph_All   20.80807 0.2111024
+#> S1: SL.earth_All + S2: SL.mean_All  21.59218 0.0000000
+#> S1: SL.earth_All + S2: SL.glm_All   19.64819 0.4474539
+#> S1: SL.earth_All + S2: SL.earth_All 19.64437 0.1748323
+#> S1: SL.earth_All + S2: SL.coxph_All 19.65313 0.0000000
+#> Single: SL.mean_All                 30.99155 0.0000000
+#> Single: SL.glm_All                  21.34758 0.0000000
+#> Single: SL.earth_All                20.13396 0.1666114
 ```
 
 When setting `twostage` to FALSE, we get the result from standard super
@@ -236,8 +237,95 @@ one
 #>     cvControl = cvControl) 
 #> 
 #> 
-#>                         Risk      Coef
-#> SL.glm_All          21.12016 0.1755772
-#> SL.earth_All        20.39265 0.3737644
-#> SL.randomForest_All 20.10009 0.4506584
+#>                  Risk       Coef
+#> SL.mean_All  30.99155 0.01539633
+#> SL.glm_All   21.34758 0.27146007
+#> SL.earth_All 20.13396 0.71314359
 ```
+
+We could also use `CV.twostageSL` to get v-fold cross validated risk
+estimate for two stage super learner, standard super learner, and all
+prediction algorithms in the library. In this case we set numbert of
+folds to be 2.
+
+``` r
+two_cv <- CV.twostageSL(
+  Y = Y, X = X,
+  family.1 = binomial,
+  family.2 = gaussian,
+  family.single = gaussian,
+  library.2stage = twostage.library,
+  library.1stage = onestage.library,
+  cvControl = list(V = 2),
+  innerCvControl = list(list(V = 5),
+                        list(V = 5))
+)
+two_cv
+#> 
+#> Call:  
+#> CV.twostageSL(Y = Y, X = X, family.1 = binomial, family.2 = gaussian, family.single = gaussian,  
+#>     library.2stage = twostage.library, library.1stage = onestage.library,  
+#>     cvControl = list(V = 2), innerCvControl = list(list(V = 5), list(V = 5))) 
+#> 
+#> 
+#> 
+#> Cross-validated predictions from the two-stage Super Learner:  SL.predict 
+#> 
+#> Cross-validated predictions from the discrete super learner (cross-validation selector):  discreteSL.predict 
+#> 
+#> Which library algorithm was the discrete super learner:  whichDiscreteSL 
+#> 
+#> Cross-validated prediction for all algorithms in the library and standard super learner:  library.predict
+```
+
+The summary and plots are shown below, with the two stage super learner
+outperforming all other prediction algorithms.
+
+    #> 
+    #> Call:  
+    #> CV.twostageSL(Y = Y, X = X, family.1 = binomial, family.2 = gaussian, family.single = gaussian,  
+    #>     library.2stage = twostage.library, library.1stage = onestage.library,  
+    #>     cvControl = list(V = 2), innerCvControl = list(list(V = 5), list(V = 5))) 
+    #> 
+    #> Risk is based on: Mean Squared Error
+    #> 
+    #> All risk estimates are based on V =  2 
+    #> 
+    #>                            Algorithm    Ave      se    Min    Max
+    #>              Two-stage Super Learner 19.514 0.72115 19.013 20.015
+    #>                          Discrete SL 19.895 0.84434 18.929 20.861
+    #>    S1: SL.mean_All + S2: SL.mean_All 30.991 0.64242 30.953 31.030
+    #>     S1: SL.mean_All + S2: SL.glm_All 26.036 0.49851 25.657 26.415
+    #>   S1: SL.mean_All + S2: SL.earth_All 26.168 0.50502 25.790 26.545
+    #>   S1: SL.mean_All + S2: SL.coxph_All 26.206 0.48504 25.714 26.697
+    #>     S1: SL.glm_All + S2: SL.mean_All 23.099 0.67940 22.807 23.391
+    #>      S1: SL.glm_All + S2: SL.glm_All 20.889 0.71529 20.883 20.894
+    #>    S1: SL.glm_All + S2: SL.earth_All 20.952 0.71781 20.923 20.981
+    #>    S1: SL.glm_All + S2: SL.coxph_All 20.919 0.70313 20.908 20.929
+    #>   S1: SL.earth_All + S2: SL.mean_All 21.466 0.79182 19.988 22.945
+    #>    S1: SL.earth_All + S2: SL.glm_All 19.921 0.84741 18.837 21.005
+    #>  S1: SL.earth_All + S2: SL.earth_All 19.895 0.84434 18.929 20.861
+    #>  S1: SL.earth_All + S2: SL.coxph_All 19.888 0.83303 18.854 20.923
+    #>                  Single: SL.mean_All 30.991 0.64242 30.953 31.030
+    #>                   Single: SL.glm_All 21.451 0.71995 20.942 21.961
+    #>                 Single: SL.earth_All 21.004 0.78972 19.124 22.884
+    #>                Standard SuperLearner 20.184 0.69532 19.268 21.101
+
+<img src="man/figures/README-example 8-1.png" width="100%" />
+
+We could use `predict` to obtain predictions on a new dataset from the
+twostageSL fit. The `onlySL` argument controls whether to compute
+predictions for all algorithms or for algorithms with non-zero
+coefficients in the two stage super learner fit.
+
+``` r
+newdata <- newX[c(1:50),]
+prediction <- predict(two,newdata = newX, onlySL = TRUE)
+#> Predictions from the two-stage Super Learner:  pred 
+#> 
+#> Prediction for all algorithms in the library:  library.predict
+```
+
+This returns a list with predictions from two stage super learner
+(`pred`) and predictions for each algorithm in library
+(`library.predict`).

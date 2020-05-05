@@ -5,17 +5,17 @@
 #' @param Y The outcome in the training data set. Must be a numeric vector.
 #' @param X The predictor variables in the training data set, usually a data.frame.
 #' @param newX The predictor variables in the validation data set. The structure should match X. If missing, uses X for newX.
-#' @param library.2stage Candidate prediction algorithms in two-stage super learner. A list containing prediction algorithms at stage 1 and stage 2, the prediction algorithms are either a character vector or a list containing character vectors. See details below for examples on the structure. A list of functions included in the SuperLearner package can be found with \code{listWrappers()}.
-#' @param library.1stage Candidate prediction algorithms in standard super learner. Either a character vector of prediction algorithms or a list containing character vectors. See details below for examples on the structure. A list of functions included in the SuperLearner package can be found with \code{listWrappers()}.
+#' @param library.2stage Candidate prediction algorithms in two-stage super learner. A list containing prediction algorithms at stage 1 and stage 2, the prediction algorithms are either a character vector or a list containing character vectors. See details below for examples on the structure. A list of functions included in the \code{twostageSL} package can be found with \code{twostage_listWrappers}.
+#' @param library.1stage Candidate prediction algorithms in standard super learner. Either a character vector of prediction algorithms or a list containing character vectors. See details below for examples on the structure. A list of functions included in the \code{twostageSL} package can be found with \code{twostage_listWrappers}.
 #' @param twostage logical; TRUE for implementing two-stage super learner; FALSE for implementing standatd super learner
 #' @param family.1 Error distribution of the stage 1 outcome for two-stage super learner. Currently only allows \code{binomial} to describe the error distribution. Link function information will be ignored and should be contained in the method argument below.
 #' @param family.2 Error distribution of the stage 2 outcome for two-stage super learner. Currently only allows \code{gaussian} to describe the error distribution. Link function information will be ignored and should be contained in the method argument below.
 #' @param family.single Error distribution of the outcome for standard super learner. Currently only allows \code{gaussian} to describe the error distribution. Link function information will be ignored and should be contained in the method argument below.
-#' @param method Details on estimating the coefficients for the two-stage super learner and the model to combine the individual algorithms in the library. Currently, the built in option is only "method.CC_LS". CC_LS uses Goldfarb and Idnani's quadratic programming algorithm to calculate the best convex combination of weights to minimize the squared error loss.
+#' @param method Details on estimating the coefficients for the two-stage super learner and the model to combine the individual algorithms in the library. Currently, the built in option is only "method.CC_LS.scale" (default) which is a scaled version of CC_LS. CC_LS.scale uses Goldfarb and Idnani's quadratic programming algorithm to calculate the best convex combination of weights to minimize the squared error loss. In addition, CC_LS.scale divides the quadratic function by a large constant to shrink the huge matrix and vector in quadratic function.
 #' @param id Optional cluster identification variable. For the cross-validation splits, \code{id} forces observations in the same cluster to be in the same validation fold. \code{id} is passed to the prediction and screening algorithms in library.2stage and library.1stage, but be sure to check the individual wrappers as many of them ignore the information.
 #' @param verbose logical; TRUE for printing progress during the computation (helpful for debugging).
-#' @param control A list of parameters to control the estimation process. Parameters include \code{saveFitLibrary} and \code{trimLogit}. See \code{\link{SuperLearner.control}} for details.
-#' @param cvControl A list of parameters to control the cross-validation process. Parameters include \code{V}, \code{stratifyCV}, \code{shuffle} and \code{validRows}. See SuperLearner.CV.control for details.
+#' @param control A list of parameters to control the estimation process. Parameters include \code{saveFitLibrary} and \code{trimLogit}. See \code{\link{twostageSL.control}} for details.
+#' @param cvControl A list of parameters to control the cross-validation process. Parameters include \code{V}, \code{stratifyCV}, \code{shuffle} and \code{validRows}. See \code{\link{twostageSL.CV.control}} for details.
 #' @param obsWeights Optional observation weights variable. As with \code{id} above, \code{obsWeights} is passed to the prediction and screening algorithms, but many of the built in wrappers ignore (or can't use) the information. If you are using observation weights, make sure the library you specify uses the information.
 #' @param env Environment containing the learner functions. Defaults to the calling environment.
 #' @details \code{twostageSL} fits the two-stage super learner prediction algorithm. The weights for each algorithm in \code{library.2stage} and \code{library.1stage} is estimated, along with the fit of each algorithm.
@@ -46,11 +46,12 @@
 #' \item{cvControl}{The \code{cvControl} list.}
 #' \item{errorsInCVLibrary}{A logical vector indicating if any algorithms experienced an error within the CV step.}
 #' \item{errorsInLibrary}{A logical vector indicating if any algorithms experienced an error on the full data.}
+#' \item{data}{The data frame including the predict variables and outcome in the training data set.}
 #' \item{env}{Environment passed into function which will be searched to find the learner functions. Defaults to the calling environment.}
 #' \item{times}{A list that contains the execution time of the twostageSL, plus separate times for model fitting and prediction.}
 #' @author Ziyue Wu
 #' @references van der Laan, M. J., Polley, E. C. and Hubbard, A. E. (2008) Super Learner, Statistical Applications of Genetics and Molecular Biology, 6, article 25.
-#' @seealso \link{SuperLearner}.
+#' @seealso \code{\link{SuperLearner}}.
 #' @export
 #' @import SuperLearner
 #' @import slcost
@@ -83,7 +84,7 @@
 #' newY <- rep(NA,m)
 #' ## probability of outcome being zero
 #' newprob <- plogis(1 + newX[,1] + newX[,2] + newX[,1]*newX[,2])
-#' newg <- rbinom(n,1,newprob)
+#' newg <- rbinom(m,1,newprob)
 #' ## assign zero outcome
 #' newind <- newg==0
 #' newY[newind] <- 0
@@ -160,7 +161,7 @@
 #'
 
 twostageSL <- function(Y, X, newX = NULL, library.2stage, library.1stage,twostage,
-                       family.1, family.2, family.single, method="method.CC_LS",
+                       family.1, family.2, family.single, method="method.CC_LS.scale",
                        id=NULL, verbose=FALSE, control = list(), cvControl = list(),
                        obsWeights = NULL, env = parent.frame()){
 
@@ -177,8 +178,6 @@ twostageSL <- function(Y, X, newX = NULL, library.2stage, library.1stage,twostag
   } else if (is.function(method)) {
     method <- method()
   }
-  # make some modifications (scale) to the superlearner:method.CC_LS
-  method$computeCoef <- method.CC_LS.scale()$computeCoef
   if(!is.list(method)) {
     stop("method is not in the appropriate format. Check out help('method.template')")
   }
@@ -187,23 +186,20 @@ twostageSL <- function(Y, X, newX = NULL, library.2stage, library.1stage,twostag
   }
 
   # get defaults for controls and make sure in correct format
-  control <- do.call('SuperLearner.control', control)
-  # change the logical for saveCVFitLibrary to TRUE (we are gonna use that)
-  control$saveCVFitLibrary <- TRUE
-
-  cvControl <- do.call('SuperLearner.CV.control', cvControl)
+  control <- do.call('twostageSL.control', control)
+  cvControl <- do.call('twostageSL.CV.control', cvControl)
 
   # put together the library
   library.stage1 <- library.2stage$stage1
   library.stage2 <- library.2stage$stage2
-  library.stage_1 <- SuperLearner:::.createLibrary(library.stage1)
-  library.stage_2 <- SuperLearner:::.createLibrary(library.stage2)
-  library.stage_single <- SuperLearner:::.createLibrary(library.1stage)
-  SuperLearner:::.check.SL.library(library = c(unique(library.stage_1$library$predAlgorithm),
+  library.stage_1 <- .createLibrary(library.stage1)
+  library.stage_2 <- .createLibrary(library.stage2)
+  library.stage_single <- .createLibrary(library.1stage)
+  .check.SL.library(library = c(unique(library.stage_1$library$predAlgorithm),
                                                library.stage_1$screenAlgorithm))
-  SuperLearner:::.check.SL.library(library = c(unique(library.stage_2$library$predAlgorithm),
+  .check.SL.library(library = c(unique(library.stage_2$library$predAlgorithm),
                                                library.stage_2$screenAlgorithm))
-  SuperLearner:::.check.SL.library(library = c(unique(library.stage_single$library$predAlgorithm),
+  .check.SL.library(library = c(unique(library.stage_single$library$predAlgorithm),
                                                library.stage_single$screenAlgorithm))
   call <- match.call(expand.dots = TRUE)
 
@@ -671,7 +667,7 @@ twostageSL <- function(Y, X, newX = NULL, library.2stage, library.1stage,twostag
   #generate Fitlibrary
   fitLibrary = list("stage1"=stage1.fitlib,
                     "stage2"=stage2.fitlib,
-                    "stage.sinlge"=stage.single.fitlib)
+                    "stage.single"=stage.single.fitlib)
 
   #generate cross-validation Fitlibrary
   cvfitLibrary <- list("stage1"=stage1.cvFitLibrary,
@@ -759,10 +755,11 @@ twostageSL <- function(Y, X, newX = NULL, library.2stage, library.1stage,twostag
       cvControl = cvControl,
       errorsInCVLibrary = errorsInCVLibrary,
       errorsInLibrary = errorsInLibrary,
+      data = dat.p,
       env = env,
       times = times
     )
-    class(out) <- c("SuperLearner")
+    class(out) <- c("twostageSL")
     out
   } else {
     # results

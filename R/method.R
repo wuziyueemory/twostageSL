@@ -7,6 +7,7 @@
 #   2) compute predictions
 
 # scaled version of method.CC_LS
+
 method.CC_LS.scale <- function() {
   computeCoef = function(Z, Y, libraryNames, verbose,
                          obsWeights=rep(1, length(Y)),

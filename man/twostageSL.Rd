@@ -14,7 +14,7 @@ twostageSL(
   family.1,
   family.2,
   family.single,
-  method = "method.CC_LS",
+  method = "method.CC_LS.scale",
   id = NULL,
   verbose = FALSE,
   control = list(),
@@ -30,9 +30,9 @@ twostageSL(
 
 \item{newX}{The predictor variables in the validation data set. The structure should match X. If missing, uses X for newX.}
 
-\item{library.2stage}{Candidate prediction algorithms in two-stage super learner. A list containing prediction algorithms at stage 1 and stage 2, the prediction algorithms are either a character vector or a list containing character vectors. See details below for examples on the structure. A list of functions included in the SuperLearner package can be found with \code{listWrappers()}.}
+\item{library.2stage}{Candidate prediction algorithms in two-stage super learner. A list containing prediction algorithms at stage 1 and stage 2, the prediction algorithms are either a character vector or a list containing character vectors. See details below for examples on the structure. A list of functions included in the \code{twostageSL} package can be found with \code{twostage_listWrappers}.}
 
-\item{library.1stage}{Candidate prediction algorithms in standard super learner. Either a character vector of prediction algorithms or a list containing character vectors. See details below for examples on the structure. A list of functions included in the SuperLearner package can be found with \code{listWrappers()}.}
+\item{library.1stage}{Candidate prediction algorithms in standard super learner. Either a character vector of prediction algorithms or a list containing character vectors. See details below for examples on the structure. A list of functions included in the \code{twostageSL} package can be found with \code{twostage_listWrappers}.}
 
 \item{twostage}{logical; TRUE for implementing two-stage super learner; FALSE for implementing standatd super learner}
 
@@ -42,15 +42,15 @@ twostageSL(
 
 \item{family.single}{Error distribution of the outcome for standard super learner. Currently only allows \code{gaussian} to describe the error distribution. Link function information will be ignored and should be contained in the method argument below.}
 
-\item{method}{Details on estimating the coefficients for the two-stage super learner and the model to combine the individual algorithms in the library. Currently, the built in option is only "method.CC_LS". CC_LS uses Goldfarb and Idnani's quadratic programming algorithm to calculate the best convex combination of weights to minimize the squared error loss.}
+\item{method}{Details on estimating the coefficients for the two-stage super learner and the model to combine the individual algorithms in the library. Currently, the built in option is only "method.CC_LS.scale" (default) which is a scaled version of CC_LS. CC_LS.scale uses Goldfarb and Idnani's quadratic programming algorithm to calculate the best convex combination of weights to minimize the squared error loss. In addition, CC_LS.scale divides the quadratic function by a large constant to shrink the huge matrix and vector in quadratic function.}
 
 \item{id}{Optional cluster identification variable. For the cross-validation splits, \code{id} forces observations in the same cluster to be in the same validation fold. \code{id} is passed to the prediction and screening algorithms in library.2stage and library.1stage, but be sure to check the individual wrappers as many of them ignore the information.}
 
 \item{verbose}{logical; TRUE for printing progress during the computation (helpful for debugging).}
 
-\item{control}{A list of parameters to control the estimation process. Parameters include \code{saveFitLibrary} and \code{trimLogit}. See \code{\link{SuperLearner.control}} for details.}
+\item{control}{A list of parameters to control the estimation process. Parameters include \code{saveFitLibrary} and \code{trimLogit}. See \code{\link{twostageSL.control}} for details.}
 
-\item{cvControl}{A list of parameters to control the cross-validation process. Parameters include \code{V}, \code{stratifyCV}, \code{shuffle} and \code{validRows}. See SuperLearner.CV.control for details.}
+\item{cvControl}{A list of parameters to control the cross-validation process. Parameters include \code{V}, \code{stratifyCV}, \code{shuffle} and \code{validRows}. See \code{\link{twostageSL.CV.control}} for details.}
 
 \item{obsWeights}{Optional observation weights variable. As with \code{id} above, \code{obsWeights} is passed to the prediction and screening algorithms, but many of the built in wrappers ignore (or can't use) the information. If you are using observation weights, make sure the library you specify uses the information.}
 
@@ -80,6 +80,7 @@ An object with S3 class \code{twostageSL} containing:
 \item{cvControl}{The \code{cvControl} list.}
 \item{errorsInCVLibrary}{A logical vector indicating if any algorithms experienced an error within the CV step.}
 \item{errorsInLibrary}{A logical vector indicating if any algorithms experienced an error on the full data.}
+\item{data}{The data frame including the predict variables and outcome in the training data set.}
 \item{env}{Environment passed into function which will be searched to find the learner functions. Defaults to the calling environment.}
 \item{times}{A list that contains the execution time of the twostageSL, plus separate times for model fitting and prediction.}
 }
@@ -122,7 +123,7 @@ newX <- data.frame(newX)
 newY <- rep(NA,m)
 ## probability of outcome being zero
 newprob <- plogis(1 + newX[,1] + newX[,2] + newX[,1]*newX[,2])
-newg <- rbinom(n,1,newprob)
+newg <- rbinom(m,1,newprob)
 ## assign zero outcome
 newind <- newg==0
 newY[newind] <- 0
@@ -202,7 +203,7 @@ one
 van der Laan, M. J., Polley, E. C. and Hubbard, A. E. (2008) Super Learner, Statistical Applications of Genetics and Molecular Biology, 6, article 25.
 }
 \seealso{
-\link{SuperLearner}.
+\code{\link{SuperLearner}}.
 }
 \author{
 Ziyue Wu

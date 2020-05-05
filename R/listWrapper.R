@@ -1,4 +1,5 @@
-listWrappers <- function(what = "both") {
+#' @export twostage_listWrappers
+twostage_listWrappers <- function(what = "both") {
   everything <- sort(getNamespaceExports("SuperLearner"))
   everything2 <- sort(getNamespaceExports("slcost"))
   if(what == "both") {

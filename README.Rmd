@@ -26,7 +26,11 @@ __Author:__ Ziyue Wu
 
 The study of healthcare expenditures has become an important area in epidemiological and public health researches as healthcare utilization and associated costs have increased rapidly in recent years. Estimating healthcare expenditures is challenging due to heavily skewed distributions and zero-inflation. Myriad methods have been developed for analyzing cost data, however, a priori determination of an appropriate method is difficult. Super-learning, a technique that considers an ensemble of methods for cost estimation, provides an interesting alternative for modeling healthcare expenditures as it addresses the difficulties in choosing the correct model form. The super learner has shown benefits over a single method in recent studies. Nevertheless, it is notable that none of the healthcare cost studies have explored the use of super learner in the case of zero-inflated cost data. Here we proposed a new method called the two-stage super learner that implemented the super-learning in a two-part model framework. The two-stage super learner had natural support for cases of zero healthcare utilization and extended the standard super learner by providing an additional layer of the ensemble, thus allowing for greater flexibility and improving the cost prediction. 
 
+## Two-stage Super Learner
+To deal with zero-inflation in the positively skewed data, we designed a method that implemented the super learner under the Two-part model framework (Two-stage Super Learner). Using $E[Y|X] = Pr(Y>0|X)E[Y|Y>0,X]$, the objective of estimating $E[Y|X]$ could be broken into two separate pieces: estimating $Pr(Y>0|X)$  and $E[Y|Y>0,X]$. This is done by adding an additional layer of the ensemble to tackle the problem of a point mass at zero. Rather than specifying a single library of prediction algorithms as in standard super learner, we specify two separate libraries of prediction algorithms, one for each of the two stages. Specifically, we specify the first stage library by positing a collection of different estimators predicting the probability of the outcome being positive and specify the second stage library by positing another collection of estimators predicting the mean of positive outcomes. Assuming the first stage library includes $K1$ methods and the second stage library includes $K2$ methods, then the two-stage super learner’s “whole library” would contain $K1*K2$ candidate estimators with each one representing a specific combination of methods from the first stage and second stage. The two-stage super learner is also an ensembling method built through a combination of algorithms that provide the best fit to the data. 
+
 ## Features
+
 `twostageSL` is an R package that provides tools for analyzing health care cost data useing the super learning technique in the two stage framework.
 
 * Automatic optimal predictor ensembling via cross-validation with one line of code.
@@ -54,9 +58,9 @@ library(twostageSL)
 To show an example on how to use this package, we simulated an example with training data containing 1000 observations, 5 predictors and testing data containing 100 observations, 5 predictions, all following a normal distribution. The outcome is continuous and non-negative with relatively high proportion of zeros.
 
 Generate training and testing set.
-```{r example 1}
+```{r example 1, message=FALSE}
 library(twostageSL)
-set.seed(1)
+set.seed(121)
 ## training set
 n <- 1000
 p <- 5
@@ -92,29 +96,29 @@ newY[newind] <- 10 + newX[newind, 1] + sqrt(abs(newX[newind, 2] * newX[newind, 3
 ```
 
 The training data looks like
-```{r example 2}
+```{r example 2, echo=FALSE}
 head(X)
 ```
 
 The proportion of zeros in outcome Y.
-```{r example 3}
+```{r example 3, echo=FALSE}
 mean(Y==0)
 ```
 
 The distribution of outcome Y, which is zero-inflated and heavily skewed.
-```{r example 4}
+```{r example 4, echo=FALSE}
 hist(Y,breaks = 100,freq = FALSE,main="Distribution of Y")
 ```
 
 `twostageSL` is the core function to fit the two stage super learner. At a minimum for implementation, you need to specify the predictor matrix X, outcome variable Y, library of prediction algorithms at two stages, boolean for two stage superlearner or standard superlearner, distribution at two stages and number of folds for cross-validation. The package incldues all the prediction algorithms from package `SuperLearner` and also includes additional prediction algorithms from package `slcost` that specifically used at stage 2 to deal with heavily skewed data.
 
 Generate the library and run the two stage super learner
-```{r example 5}
+```{r example 5, message=FALSE}
 ## generate the Library
-twostage.library <- list(stage1=c("SL.glm","SL.earth","SL.randomForest"),
-                       stage2=c("SL.glm","SL.earth","SL.randomForest","SL.coxph"))
+twostage.library <- list(stage1=c("SL.mean","SL.glm","SL.earth"),
+                       stage2=c("SL.mean","SL.glm","SL.earth","SL.coxph"))
 
-onestage.library <- c("SL.glm","SL.earth","SL.randomForest")
+onestage.library <- c("SL.mean","SL.glm","SL.earth")
 
 
 ## run the twostage super learner
@@ -132,7 +136,7 @@ two
 ```
 
 When setting `twostage` to FALSE, we get the result from standard super learner
-```{r example 6}
+```{r example 6, message=FALSE}
 ## run the standard super learner
 one <- twostageSL(Y=Y,
                   X=X,
@@ -146,3 +150,32 @@ one <- twostageSL(Y=Y,
                   cvControl = list(V = 5))
 one
 ```
+
+We could also use `CV.twostageSL` to get v-fold cross validated risk estimate for two stage super learner, standard super learner, and all prediction algorithms in the library. In this case we set numbert of folds to be 2.
+```{r example 7, message=FALSE}
+two_cv <- CV.twostageSL(
+  Y = Y, X = X,
+  family.1 = binomial,
+  family.2 = gaussian,
+  family.single = gaussian,
+  library.2stage = twostage.library,
+  library.1stage = onestage.library,
+  cvControl = list(V = 2),
+  innerCvControl = list(list(V = 5),
+                        list(V = 5))
+)
+two_cv
+```
+
+The summary and plots are shown below, with the two stage super learner outperforming all other prediction algorithms.
+```{r example 8, echo=FALSE, message=FALSE}
+summary(two_cv)
+plot(two_cv)
+```
+
+We could use `predict` to obtain predictions on a new dataset from the twostageSL fit. The `onlySL` argument controls whether to compute predictions for all algorithms or for algorithms with non-zero coefficients in the two stage super learner fit.
+```{r example 9, message=FALSE}
+newdata <- newX[c(1:50),]
+prediction <- predict(two,newdata = newX, onlySL = TRUE)
+```
+This returns a list with predictions from two stage super learner (`pred`) and predictions for each algorithm in library (`library.predict`).
