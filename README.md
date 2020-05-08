@@ -162,9 +162,8 @@ X, outcome variable Y, library of prediction algorithms at two stages,
 boolean for two stage superlearner or standard superlearner,
 distribution at two stages and number of folds for cross-validation. The
 package incldues all the prediction algorithms from package
-`SuperLearner` and also includes additional prediction algorithms from
-package `slcost` that specifically used at stage 2 to deal with heavily
-skewed data.
+`SuperLearner` and also includes additional prediction algorithms that
+specifically used at stage 2 to deal with heavily skewed data.
 
 Generate the library and run the two stage super learner
 

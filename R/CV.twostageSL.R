@@ -45,7 +45,6 @@
 #'
 #' @export
 #' @import SuperLearner
-#' @import slcost
 #'
 #' @examples
 #' ## simulate data
