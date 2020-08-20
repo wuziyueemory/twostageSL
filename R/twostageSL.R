@@ -160,9 +160,8 @@
 #'
 
 twostageSL <- function(Y, X, newX = NULL, library.2stage, library.1stage,twostage,
-                       family.1=binomial, family.2=gaussian, family.single=gaussian,
-                       method="method.CC_LS.scale", id=NULL, verbose=FALSE,
-                       control = list(), cvControl = list(),
+                       family.1, family.2, family.single, method="method.CC_LS",
+                       id=NULL, verbose=FALSE, control = list(), cvControl = list(),
                        obsWeights = NULL, env = parent.frame()){
 
   # Begin timing how long two-stage SuperLearner takes to execute
@@ -178,6 +177,8 @@ twostageSL <- function(Y, X, newX = NULL, library.2stage, library.1stage,twostag
   } else if (is.function(method)) {
     method <- method()
   }
+  # make some modifications (scale) to the superlearner:method.CC_LS
+  method$computeCoef <- method.CC_LS.scale()$computeCoef
   if(!is.list(method)) {
     stop("method is not in the appropriate format. Check out help('method.template')")
   }
@@ -186,20 +187,23 @@ twostageSL <- function(Y, X, newX = NULL, library.2stage, library.1stage,twostag
   }
 
   # get defaults for controls and make sure in correct format
-  control <- do.call('twostageSL.control', control)
-  cvControl <- do.call('twostageSL.CV.control', cvControl)
+  control <- do.call('SuperLearner.control', control)
+  # change the logical for saveCVFitLibrary to TRUE (we are gonna use that)
+  control$saveCVFitLibrary <- TRUE
+
+  cvControl <- do.call('SuperLearner.CV.control', cvControl)
 
   # put together the library
   library.stage1 <- library.2stage$stage1
   library.stage2 <- library.2stage$stage2
-  library.stage_1 <- .createLibrary(library.stage1)
-  library.stage_2 <- .createLibrary(library.stage2)
-  library.stage_single <- .createLibrary(library.1stage)
-  .check.SL.library(library = c(unique(library.stage_1$library$predAlgorithm),
+  library.stage_1 <- SuperLearner:::.createLibrary(library.stage1)
+  library.stage_2 <- SuperLearner:::.createLibrary(library.stage2)
+  library.stage_single <- SuperLearner:::.createLibrary(library.1stage)
+  SuperLearner:::.check.SL.library(library = c(unique(library.stage_1$library$predAlgorithm),
                                                library.stage_1$screenAlgorithm))
-  .check.SL.library(library = c(unique(library.stage_2$library$predAlgorithm),
+  SuperLearner:::.check.SL.library(library = c(unique(library.stage_2$library$predAlgorithm),
                                                library.stage_2$screenAlgorithm))
-  .check.SL.library(library = c(unique(library.stage_single$library$predAlgorithm),
+  SuperLearner:::.check.SL.library(library = c(unique(library.stage_single$library$predAlgorithm),
                                                library.stage_single$screenAlgorithm))
   call <- match.call(expand.dots = TRUE)
 
@@ -339,6 +343,7 @@ twostageSL <- function(Y, X, newX = NULL, library.2stage, library.1stage,twostag
   ord <- order(Y)
   cvfold <- rep(c(1:V,V:1),N)[1:N]
   folds <- split(ord, factor(cvfold))
+  folds <- lapply(folds,sort,decreasing=FALSE)
   # check
   tab <- rep(NA,V)
   for (i in 1:V) {
@@ -465,7 +470,15 @@ twostageSL <- function(Y, X, newX = NULL, library.2stage, library.1stage,twostag
   p.id <- dat.p[dat.p$Y>0,1]
   p.obsWeights <- obsWeights[p.id]
 
-  crossValFUN_out <- lapply(folds, FUN = .crossValFUN,
+  # find intersect of folds & X.p
+  folds.p <- vector(mode = "list", length = V)
+
+  for (i in 1:V){
+    folds.p[[i]] <- intersect(folds[[i]],as.numeric(row.names(X.p)))
+  }
+  names(folds.p) <- seq(1,V)
+
+  crossValFUN_out <- lapply(folds.p, FUN = .crossValFUN,
                             Y = Y.p, dataX = X.p, predX = X.test, id = p.id,
                             obsWeights = p.obsWeights, family = family.2,
                             library = library.stage_2, kScreen = kScreen.2,
@@ -474,8 +487,8 @@ twostageSL <- function(Y, X, newX = NULL, library.2stage, library.1stage,twostag
 
   # create matrix to store results
   z2 <- matrix(NA,nrow = N,ncol=k.2)
-
-  z2[unlist(folds, use.names = FALSE), ] <- do.call('rbind', lapply(crossValFUN_out, "[[", "out"))
+  z2[unlist(folds.p, use.names = FALSE), ] <- do.call('rbind', lapply(crossValFUN_out, "[[", "out"))
+  z2[-unlist(folds.p, use.names = FALSE), ] <- 0
 
   if(control$saveCVFitLibrary){
     stage2.cvFitLibrary <- lapply(crossValFUN_out, "[[", "model_out")
@@ -501,7 +514,7 @@ twostageSL <- function(Y, X, newX = NULL, library.2stage, library.1stage,twostag
   # step 3: fit the whole model using one stage option (rather than two stages)
   # list all the algorithms considered
   # save cross-validated fits (10) in the control option
-  onestage.fit <- SuperLearner(Y=Y,X=X,newX=newX,family=family.single,
+  onestage.fit <- SuperLearner(Y=Y,X=X,family=family.single,
                                SL.library=library.1stage,verbose=verbose,
                                method=method.CC_LS.scale,
                                control=list(saveCVFitLibrary=T),
@@ -667,7 +680,7 @@ twostageSL <- function(Y, X, newX = NULL, library.2stage, library.1stage,twostag
   #generate Fitlibrary
   fitLibrary = list("stage1"=stage1.fitlib,
                     "stage2"=stage2.fitlib,
-                    "stage.single"=stage.single.fitlib)
+                    "stage.sinlge"=stage.single.fitlib)
 
   #generate cross-validation Fitlibrary
   cvfitLibrary <- list("stage1"=stage1.cvFitLibrary,
@@ -755,11 +768,11 @@ twostageSL <- function(Y, X, newX = NULL, library.2stage, library.1stage,twostag
       cvControl = cvControl,
       errorsInCVLibrary = errorsInCVLibrary,
       errorsInLibrary = errorsInLibrary,
-      data = dat.p,
+      metaOptimizer = getCoef$optimizer,
       env = env,
       times = times
     )
-    class(out) <- c("twostageSL")
+    class(out) <- c("SuperLearner")
     out
   } else {
     # results
