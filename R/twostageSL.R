@@ -343,7 +343,6 @@ twostageSL <- function(Y, X, newX = NULL, library.2stage, library.1stage,twostag
   ord <- order(Y)
   cvfold <- rep(c(1:V,V:1),N)[1:N]
   folds <- split(ord, factor(cvfold))
-  folds <- lapply(folds,sort,decreasing=FALSE)
   # check
   tab <- rep(NA,V)
   for (i in 1:V) {
@@ -470,15 +469,7 @@ twostageSL <- function(Y, X, newX = NULL, library.2stage, library.1stage,twostag
   p.id <- dat.p[dat.p$Y>0,1]
   p.obsWeights <- obsWeights[p.id]
 
-  # find intersect of folds & X.p
-  folds.p <- vector(mode = "list", length = V)
-
-  for (i in 1:V){
-    folds.p[[i]] <- intersect(folds[[i]],as.numeric(row.names(X.p)))
-  }
-  names(folds.p) <- seq(1,V)
-
-  crossValFUN_out <- lapply(folds.p, FUN = .crossValFUN,
+  crossValFUN_out <- lapply(folds, FUN = .crossValFUN,
                             Y = Y.p, dataX = X.p, predX = X.test, id = p.id,
                             obsWeights = p.obsWeights, family = family.2,
                             library = library.stage_2, kScreen = kScreen.2,
@@ -487,8 +478,8 @@ twostageSL <- function(Y, X, newX = NULL, library.2stage, library.1stage,twostag
 
   # create matrix to store results
   z2 <- matrix(NA,nrow = N,ncol=k.2)
-  z2[unlist(folds.p, use.names = FALSE), ] <- do.call('rbind', lapply(crossValFUN_out, "[[", "out"))
-  z2[-unlist(folds.p, use.names = FALSE), ] <- 0
+
+  z2[unlist(folds, use.names = FALSE), ] <- do.call('rbind', lapply(crossValFUN_out, "[[", "out"))
 
   if(control$saveCVFitLibrary){
     stage2.cvFitLibrary <- lapply(crossValFUN_out, "[[", "model_out")

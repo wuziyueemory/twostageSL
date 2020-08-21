@@ -114,7 +114,6 @@ CV.twostageSL <- function(Y, X, V = NULL,
   ord <- order(Y)
   cvfold <- rep(c(1:V,V:1),N)[1:N]
   folds <- split(ord, factor(cvfold))
-  folds <- lapply(folds,sort,decreasing=FALSE)
 
   # check
   tab <- rep(NA,V)
