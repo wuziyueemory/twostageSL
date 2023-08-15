@@ -56,15 +56,27 @@ predict.twostageSL <- function(object, newdata, X = NULL, Y = NULL,
       } else {
         subset(X, select = object$whichScreen$stage1[object$SL.library$library$twostage[mm*k.stage2, 2], ])
       }
+      
+      if(is.null(Y)){
+        Y.0 <- NULL
+      } else {
+        Y.0 <- as.numeric(Y==0)
+      }
       predY.stage1[, mm] <- do.call('predict', list(object = object$fitLibrary$stage1[[mm]],
                                                     newdata = newdataMM.stage1,
                                                     family = family.stage1,
                                                     X = XMM.stage1,
-                                                    Y = as.numeric(Y==0)))
-
+                                                    Y = Y.0
+                                                    #Y = as.numeric(Y==0)))
+      ))
+      
     }
     # stage 2
-    Y.p <- Y[Y>0]
+    if(is.null(Y)){
+      Y.p <- NULL
+    } else {
+      Y.p <- Y[Y>0]
+    }
     for (mm in seq(k.stage2)) {
       newdataMM.stage2 <- subset(newdata,
                                  select = object$whichScreen$stage2[object$SL.library$library$twostage[mm, 3], ])
@@ -92,7 +104,7 @@ predict.twostageSL <- function(object, newdata, X = NULL, Y = NULL,
       } else {
         subset(X, select = object$whichScreen$single.stage[object$SL.library$library$singlestage[mm, 2], ])
       }
-      predY.singlestage[, mm] <- do.call('predict', list(object = object$fitLibrary$stage.single[[mm]],
+      predY.singlestage[, mm] <- do.call('predict', list(object = object$fitLibrary$stage.sinlge[[mm]],
                                                          newdata = newdataMM.singestage,
                                                          family = family.singlestage,
                                                          X = XMM.singlestage,
@@ -123,22 +135,33 @@ predict.twostageSL <- function(object, newdata, X = NULL, Y = NULL,
     # stage 1
     for (mm in seq(k.stage1)) {
       newdataMM.stage1 <- subset(newdata,
-                          select = object$whichScreen$stage1[object$SL.library$library$twostage[mm*k.stage2, 2], ])
+                                 select = object$whichScreen$stage1[object$SL.library$library$twostage[mm*k.stage2, 2], ])
       family.stage1 <- object$family$stage1
       XMM.stage1 <- if (is.null(X)) {
         NULL
       } else {
         subset(X, select = object$whichScreen$stage1[object$SL.library$library$twostage[mm*k.stage2, 2], ])
       }
+      
+      if(is.null(Y)){
+        Y.0 <- NULL
+      } else {
+        Y.0 <- as.numeric(Y==0)
+      }
       predY.stage1[, mm] <- do.call('predict', list(object = object$fitLibrary$stage1[[mm]],
-                                             newdata = newdataMM.stage1,
-                                             family = family.stage1,
-                                             X = XMM.stage1,
-                                             Y = as.numeric(Y==0)))
-
+                                                    newdata = newdataMM.stage1,
+                                                    family = family.stage1,
+                                                    X = XMM.stage1,
+                                                    Y = Y.0))
+      
     }
     # stage 2
-    Y.p <- Y[Y>0]
+    if(is.null(Y)){
+      Y.p <- NULL
+    } else {
+      Y.p <- Y[Y>0]
+    }
+    
     for (mm in seq(k.stage2)) {
       newdataMM.stage2 <- subset(newdata,
                                  select = object$whichScreen$stage2[object$SL.library$library$twostage[mm, 3], ])
@@ -154,23 +177,24 @@ predict.twostageSL <- function(object, newdata, X = NULL, Y = NULL,
                                                     newdata = newdataMM.stage2,
                                                     family = family.stage2,
                                                     X = XMM.stage2,
-                                                    Y = Y.p))
+                                                    Y = Y.p
+      ))
     }
     # single stage
     for (mm in seq(k.singlestage)) {
       newdataMM.singestage <- subset(newdata,
-                          select = object$whichScreen$single.stage[object$SL.library$library$singlestage[mm, 2], ])
+                                     select = object$whichScreen$single.stage[object$SL.library$library$singlestage[mm, 2], ])
       family.singlestage <- object$family$stage.single
       XMM.singlestage <- if (is.null(X)) {
         NULL
       } else {
         subset(X, select = object$whichScreen$single.stage[object$SL.library$library$singlestage[mm, 2], ])
       }
-      predY.singlestage[, mm] <- do.call('predict', list(object = object$fitLibrary$stage.single[[mm]],
-                                             newdata = newdataMM.singestage,
-                                             family = family.singlestage,
-                                             X = XMM.singlestage,
-                                             Y = Y))
+      predY.singlestage[, mm] <- do.call('predict', list(object = object$fitLibrary$stage.sinlge[[mm]],
+                                                         newdata = newdataMM.singestage,
+                                                         family = family.singlestage,
+                                                         X = XMM.singlestage,
+                                                         Y = Y))
     }
     # get prediction for 2-stage model
     predY <- NULL
